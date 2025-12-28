@@ -1,0 +1,119 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PremiumInput } from '@/components/ui/PremiumInput';
+import Link from 'next/link';
+import { getCurrentLocation } from '@/lib/geolocation';
+import { fetchAPI } from '@/lib/api';
+
+export default function LoginPage() {
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            // Get GPS location as per guide
+            const deviceLocation = await getCurrentLocation();
+
+            const response = await fetchAPI('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    identifier: formData.email,
+                    password: formData.password,
+                    deviceLocation: {
+                        lat: deviceLocation?.lat,
+                        lng: deviceLocation?.lng
+                    }
+                })
+            });
+
+            // Store authentication tokens and user data
+            if (response.success && response.data?.session) {
+                const { session, user } = response.data;
+
+                // Store tokens in localStorage
+                localStorage.setItem('neyborhuud_access_token', session.access_token);
+                if (session.refresh_token) {
+                    localStorage.setItem('neyborhuud_refresh_token', session.refresh_token);
+                }
+
+                // Store user data
+                if (user) {
+                    localStorage.setItem('neyborhuud_user', JSON.stringify(user));
+                }
+
+                console.log('✅ Login successful, tokens stored');
+            }
+
+            router.push('/feed');
+        } catch (error: any) {
+            console.error(error);
+            alert(`Login Error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="h-[100dvh] bg-soft-bg flex flex-col p-6 max-w-md mx-auto overflow-hidden">
+            {/* Header */}
+            <div className="mt-12 mb-10">
+                <h1 className="text-4xl font-light text-charcoal tracking-tighter leading-none">Welcome Back</h1>
+                <p className="text-deep-text/50 font-light mt-3 text-lg">Continue your NeyborHuud journey.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <PremiumInput
+                    label="Email Address"
+                    type="email"
+                    icon="bi-envelope"
+                    placeholder="nancy@example.com"
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+
+                <div className="flex flex-col gap-2">
+                    <PremiumInput
+                        label="Password"
+                        type="password"
+                        icon="bi-lock"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                    />
+                    <div className="flex justify-end px-2">
+                        <button type="button" className="text-[10px] font-black uppercase tracking-widest text-brand-blue hover:text-brand-blue/70">
+                            Forgot Password?
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    disabled={loading || !formData.email || !formData.password}
+                    className={`
+                        neumorphic-btn py-5 rounded-2xl mt-6 transition-all duration-300
+                        ${(loading || !formData.email || !formData.password) ? 'opacity-50 cursor-not-allowed scale-[0.98]' : 'hover:scale-[1.02]'}
+                    `}
+                >
+                    <span className="text-charcoal font-black uppercase tracking-widest">
+                        {loading ? 'Logging in...' : 'Log In'}
+                    </span>
+                </button>
+            </form>
+
+            <div className="mt-auto pb-10 text-center">
+                <p className="text-charcoal/40 text-sm font-light uppercase tracking-tighter">
+                    New to the NeyborHuud? <Link href="/signup" className="text-brand-blue font-bold">Join for Free</Link>
+                </p>
+            </div>
+        </div>
+    );
+}

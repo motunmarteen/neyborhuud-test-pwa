@@ -1,0 +1,17 @@
+{
+    "name": "NeyborHuud",
+    "short_name": "NeyborHuud",
+    "description": "The Ultimate Neighborhood Operating System",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
